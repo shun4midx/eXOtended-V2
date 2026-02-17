@@ -179,7 +179,7 @@ export class eXOtendedGame {
         return "tie"; // tie
     }
 
-    public renderBoard(): string {
+    public renderBoard(highlightBig?: number, validBigBoards?: number[]): string {
         let output = "";
     
         for (let big_row = 0; big_row < 3; ++big_row) {
@@ -196,10 +196,31 @@ export class eXOtendedGame {
                         return "Invalid";
                     }
     
-                    output += row.map(cell =>
-                        cell === 0 ? "⬜" :
-                        cell === 1 ? "🟦" : "🟥"
-                    ).join("");
+                    output += row.map((cell) => {
+
+                        // Occupied always wins
+                        if (cell === 1) {
+                            return "🟦";
+                        }
+                        
+                        if (cell === 2) {
+                            return "🟥";
+                        }
+                    
+                        // Small-grid selection mode
+                        if (highlightBig !== undefined) {
+                            return big_idx === highlightBig ? "🟨" : "⬜";
+                        }
+                    
+                        // Big-grid selection mode
+                        if (validBigBoards !== undefined) {
+                            return validBigBoards.includes(big_idx) ? "🟨" : "⬜";
+                        }
+                    
+                        // Default
+                        return "⬜";
+                    
+                    }).join("");                    
     
                     if (big_col != 2) {
                         output += "⬛";
@@ -211,7 +232,7 @@ export class eXOtendedGame {
                 output += "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n";
             }
         }
-    
+
         return output;
     }    
 }
