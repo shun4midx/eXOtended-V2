@@ -201,11 +201,15 @@ export class eXOtendedGame {
                         cell === 1 ? "🟦" : "🟥"
                     ).join("");
     
-                    output += "⬛️";
+                    if (big_col != 2) {
+                        output += "⬛";
+                    }
                 }
                 output += "\n";
             }
-            output += "⬛️⬛️⬛️⬛️⬛️⬛️⬛️⬛️⬛️⬛️⬛️";
+            if (big_row != 2) {
+                output += "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n";
+            }
         }
     
         return output;
