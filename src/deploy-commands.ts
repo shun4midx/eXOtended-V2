@@ -20,7 +20,21 @@ const commands = [
                 .setDescription('Select the player you want to challenge')
                 .setRequired(true)
         )
-        .toJSON()
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('import_game')
+        .setDescription('Import an eXOtended game')
+        .addStringOption(option =>
+            option
+                .setName('data')
+                .setDescription('Game data you copied from /export_game to import')
+                .setRequired(true)
+        )
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('export_game')
+        .setDescription('Export the latest current eXOtended game in this channel')
+        .toJSON()    
 ];
 
 const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN!);

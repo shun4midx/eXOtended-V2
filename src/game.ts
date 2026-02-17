@@ -234,5 +234,43 @@ export class eXOtendedGame {
         }
 
         return output;
-    }    
+    }   
+    
+    // Import/export game
+    public serialize(player1: string, player2: string): string {
+        return JSON.stringify({
+            board: this.board,
+            current_player: this.current_player,
+            next_big_index: this.next_big_index,
+            score: this.score,
+            claimed_lines: Array.from(this.claimed_lines),
+            moves_played: this.moves_played,
+            ended: this.ended,
+            player1,
+            player2
+        });
+    }
+
+    public static deserialize(data: string): {
+        game: eXOtendedGame,
+        player1: string,
+        player2: string
+    } {
+        const parsed = JSON.parse(data);
+    
+        const game = new eXOtendedGame();
+        game.board = parsed.board;
+        game.current_player = parsed.current_player;
+        game.next_big_index = parsed.next_big_index;
+        game.score = parsed.score;
+        game.claimed_lines = new Set(parsed.claimed_lines);
+        game.moves_played = parsed.moves_played;
+        game.ended = parsed.ended;
+    
+        return {
+            game,
+            player1: parsed.player1,
+            player2: parsed.player2
+        };
+    }
 }

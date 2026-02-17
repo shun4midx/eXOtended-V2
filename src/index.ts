@@ -134,6 +134,50 @@ client.on('interactionCreate', async interaction => {
                 components: createBigBoardButtons(game.getValidBigBoards())
         });
         }
+    
+        if (interaction.commandName === 'import_game') {
+            const data = interaction.options.getString('data', true);
+            const { game, player1, player2 } = eXOtendedGame.deserialize(data);
+
+            if (interaction.user.id !== player1 && interaction.user.id !== player2) {
+                return interaction.reply({
+                    content: 'You were not part of this game',
+                    ephemeral: true
+                });
+            }
+
+            games.set(interaction.channelId, {
+                game,
+                player1,
+                player2
+            });
+
+            // Reply with the continued game
+            return interaction.reply({
+                content:
+                    `🟦 <@${player1}> (${game.score[1]}) vs 🟥 <@${player2}> (${game.score[2]})\n\n`
+                    + `Current Turn: ${
+                        game.current_player === 1
+                            ? `🟦 <@${player1}>`
+                            : `🟥 <@${player2}>`
+                    }\n\n`
+                    + game.renderBoard(undefined, game.getValidBigBoards())
+                    + `\nClick the big grid you want to put your next move in:`,
+                components: createBigBoardButtons(game.getValidBigBoards())
+            });
+        }
+
+        if (interaction.commandName === 'export_game') {
+            const session = games.get(interaction.channelId);
+            if (!session) {
+                return;
+            }
+
+            await interaction.reply({
+                content: `Copy this to restore later:\n\`\`\`\n${session.game.serialize(session.player1, session.player2)}\n\`\`\``,
+                ephemeral: false
+            });
+        }
     }
 
     // Button clicks
@@ -239,7 +283,7 @@ client.on('interactionCreate', async interaction => {
                     + `\nClick the big grid you want to put your next move in:`,
                 components: createBigBoardButtons(game.getValidBigBoards())
             });
-        }        
+        }
     }    
 });
 
