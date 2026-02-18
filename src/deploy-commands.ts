@@ -40,28 +40,18 @@ const commands = [
 const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN!);
 
 async function deploy() {
-    try {
-        console.log('Registering slash commands...');
+  try {
+    console.log('Registering global slash commands...');
 
-        const guildIds = [
-            process.env.GUILD_ID1!,
-            process.env.GUILD_ID2!
-        ];
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID!), // global, not per‑guild
+      { body: commands },
+    );
 
-        for (const guildId of guildIds) {
-            await rest.put(
-                Routes.applicationGuildCommands(
-                    process.env.CLIENT_ID!,
-                    guildId
-                ),
-                { body: commands }
-            );
-        }
-
-        console.log('Slash commands registered successfully.');
-    } catch (error) {
-        console.error(error);
-    }
+    console.log('Global slash commands registered successfully.');
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 deploy();
