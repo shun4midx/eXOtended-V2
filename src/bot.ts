@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Shun/翔海 (@shun4midx) *
  * Project: eXOtended-V2                    *
  * File Type: TS file                       *
- * File: index.ts                           *
+ * File: bot.ts                             *
  ****************************************** */
 
 import { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
