@@ -5,13 +5,6 @@
  * File: ai_player.ts                       *
  ****************************************** */
 
-/********************************************
- * Copyright (c) 2026 Shun/翔海 (@shun4midx) *
- * Project: eXOtended-V2                    *
- * File Type: TS file                       *
- * File: ai_player.ts                       *
- ****************************************** */
-
 import { eXOtendedGame, Player } from "./game";
 
 export type Move = {
