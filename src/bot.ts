@@ -8,6 +8,7 @@
 import { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import dotenv from 'dotenv';
 import { eXOtendedGame } from './game';
+import { AIPlayer } from "./ai_player";
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ type GameSession = {
     game: eXOtendedGame;
     player1: string;
     player2: string;
+    vsComputer?: boolean;
 };
 
 const games = new Map<string, GameSession>();
@@ -137,7 +139,7 @@ client.on('interactionCreate', async interaction => {
     
         if (interaction.commandName === 'import_game') {
             const data = interaction.options.getString('data', true);
-            const { game, player1, player2 } = eXOtendedGame.deserialize(data);
+            const { game, player1, player2, vsComputer } = eXOtendedGame.deserialize(data);
 
             if (interaction.user.id !== player1 && interaction.user.id !== player2) {
                 return interaction.reply({
@@ -149,17 +151,27 @@ client.on('interactionCreate', async interaction => {
             games.set(interaction.channelId, {
                 game,
                 player1,
-                player2
+                player2,
+                vsComputer
             });
 
+            // Have computer continue
+            if (vsComputer && game.current_player === 2 && !game.ended) {
+                const ai_move = AIPlayer.findBestMove(game, 4);
+                if (ai_move) {
+                    game.makeMove(ai_move.big, ai_move.row, ai_move.col);
+                }
+            }
+
             // Reply with the continued game
+            const player2Display = vsComputer ? "🤖 Computer" : `<@${player2}>`;
             return interaction.reply({
                 content:
-                    `🟦 <@${player1}> (${game.score[1]}) vs 🟥 <@${player2}> (${game.score[2]})\n\n`
+                    `🟦 <@${player1}> (${game.score[1]}) vs 🟥 ${player2Display} (${game.score[2]})\n\n`
                     + `Current Turn: ${
                         game.current_player === 1
                             ? `🟦 <@${player1}>`
-                            : `🟥 <@${player2}>`
+                            : `🟥 ${player2Display}`
                     }\n\n`
                     + game.renderBoard(undefined, game.getValidBigBoards())
                     + `\nClick the big grid you want to put your next move in:`,
@@ -174,10 +186,31 @@ client.on('interactionCreate', async interaction => {
             }
 
             await interaction.reply({
-                content: `Copy this to restore later:\n\`\`\`\n${session.game.serialize(session.player1, session.player2)}\n\`\`\``,
+                content: `Copy this to restore later:\n\`\`\`\n${session.game.serialize(session.player1, session.player2, session.vsComputer)}\n\`\`\``,
                 ephemeral: false
             });
         }
+
+        if (interaction.commandName === 'play_vs_computer') {
+
+            const game = new eXOtendedGame();
+        
+            games.set(interaction.channelId, {
+                game,
+                player1: interaction.user.id,
+                player2: "AI",
+                vsComputer: true
+            });
+        
+            return interaction.reply({
+                content:
+                    `🟦 ${interaction.user} (${game.score[1]}) vs 🟥 🤖 Computer (${game.score[2]})\n\n`
+                    + `Current Turn: 🟦 ${interaction.user}\n\n`
+                    + game.renderBoard(undefined, game.getValidBigBoards())
+                    + `\nClick the big grid you want to put your next move in:`,
+                components: createBigBoardButtons(game.getValidBigBoards())
+            });
+        }        
     }
 
     // Button clicks
@@ -190,13 +223,20 @@ client.on('interactionCreate', async interaction => {
     
         // Turn enforcement
         const currentPlayerId =
-            game.current_player === 1 ? player1 : player2;
+            game.current_player === 1
+                ? player1
+                : (session.vsComputer ? 'AI' : player2);
+
+        // Player 2 header name
+        const player2Display = session.vsComputer ? "🤖 Computer" : `<@${player2}>`;
     
-        if (interaction.user.id !== currentPlayerId) {
-            return interaction.reply({
-                content: 'Not your turn',
-                ephemeral: true
-            });
+        if (!session.vsComputer || game.current_player === 1) {
+            if (interaction.user.id !== currentPlayerId) {
+                return interaction.reply({
+                    content: 'Not your turn',
+                    ephemeral: true
+                });
+            }
         }
     
         // Big board click
@@ -214,11 +254,11 @@ client.on('interactionCreate', async interaction => {
     
             // Show little grid buttons
             return interaction.update({
-                content: `🟦 <@${player1}> (${game.score[1]}) vs 🟥 <@${player2}> (${game.score[2]})\n\n`
+                content: `🟦 <@${player1}> (${game.score[1]}) vs 🟥 ${player2Display} (${game.score[2]})\n\n`
                         + `Current Turn: ${
                             game.current_player === 1
                                 ? `🟦 <@${player1}>`
-                                : `🟥 <@${player2}>`
+                                : `🟥 ${player2Display}`
                         }\n\n`
                         + game.renderBoard(big_idx)
                         + `\nSelect a square in big grid ${big_idx + 1}`,
@@ -242,6 +282,16 @@ client.on('interactionCreate', async interaction => {
                 });
             }
 
+            // If vs computer and game not ended, let AI move
+            if (session.vsComputer && !game.ended) {
+
+                const ai_move = AIPlayer.findBestMove(game, 4);
+
+                if (ai_move) {
+                    game.makeMove(ai_move.big, ai_move.row, ai_move.col);
+                }
+            }
+
             // Game ended
             if (game.ended) {
 
@@ -252,7 +302,7 @@ client.on('interactionCreate', async interaction => {
                 if (winner === 1) {
                     resultText = `Game Over! 🟦 <@${player1}> won!`;
                 } else if (winner === 2) {
-                    resultText = `Game Over! 🟥 <@${player2}> won!`;
+                    resultText = `Game Over! 🟥 ${player2Display} won!`;
                 } else {
                     resultText = `Game Over! It's a tie!`;
                 }
@@ -262,9 +312,9 @@ client.on('interactionCreate', async interaction => {
             
                 return interaction.update({
                     content:
-                        `🟦 <@${player1}> (${game.score[1]}) vs 🟥 <@${player2}> (${game.score[2]})\n\n`
+                        `🟦 <@${player1}> (${game.score[1]}) vs 🟥 ${player2Display} (${game.score[2]})\n\n`
                         + game.renderBoard()
-                        + `\n\n${resultText}`,
+                        + `\n${resultText}`,
                     components: [] // disable all buttons
                 });
             }
@@ -273,11 +323,11 @@ client.on('interactionCreate', async interaction => {
             // Update message back to big board view
             return interaction.update({
                 content:
-                    `🟦 <@${player1}> (${game.score[1]}) vs 🟥 <@${player2}> (${game.score[2]})\n\n`
+                    `🟦 <@${player1}> (${game.score[1]}) vs 🟥 ${player2Display} (${game.score[2]})\n\n`
                     + `Current Turn: ${
                         game.current_player === 1
                             ? `🟦 <@${player1}>`
-                            : `🟥 <@${player2}>`
+                            : `🟥 ${player2Display}`
                     }\n\n`
                     + game.renderBoard(undefined, game.getValidBigBoards())
                     + `\nClick the big grid you want to put your next move in:`,

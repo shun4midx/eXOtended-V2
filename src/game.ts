@@ -128,13 +128,13 @@ export class eXOtendedGame {
             return true;
         }
     
-        for (let r = 0; r < 3; r++) {
+        for (let r = 0; r < 3; ++r) {
             const small_row = big_board[r];
             if (!small_row) {
                 return false;
             }
 
-            for (let c = 0; c < 3; c++) {
+            for (let c = 0; c < 3; ++c) {
                 if (small_row[c] === 0) {
                     return false;
                 }
@@ -156,7 +156,7 @@ export class eXOtendedGame {
         const valid: number[] = [];
     
         // Full big squares next move
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < 9; ++i) {
             if (!this.isBigBoardFull(i)) {
                 valid.push(i);
             }
@@ -237,7 +237,7 @@ export class eXOtendedGame {
     }   
     
     // Import/export game
-    public serialize(player1: string, player2: string): string {
+    public serialize(player1: string, player2: string, vsComputer?: boolean): string {
         return JSON.stringify({
             board: this.board,
             current_player: this.current_player,
@@ -247,14 +247,16 @@ export class eXOtendedGame {
             moves_played: this.moves_played,
             ended: this.ended,
             player1,
-            player2
+            player2,
+            vsComputer: vsComputer ?? false
         });
     }
 
     public static deserialize(data: string): {
         game: eXOtendedGame,
         player1: string,
-        player2: string
+        player2: string,
+        vsComputer: boolean
     } {
         const parsed = JSON.parse(data);
     
@@ -270,7 +272,47 @@ export class eXOtendedGame {
         return {
             game,
             player1: parsed.player1,
-            player2: parsed.player2
+            player2: parsed.player2,
+            vsComputer: parsed.vsComputer ?? false
         };
     }
+
+    // For AI player
+    public clone(): eXOtendedGame {
+        const g = new eXOtendedGame();
+        g.board = JSON.parse(JSON.stringify(this.board));
+        g.current_player = this.current_player;
+        g.next_big_index = this.next_big_index;
+        g.score = { ...this.score };
+        g.claimed_lines = new Set(this.claimed_lines);
+        g.moves_played = this.moves_played;
+        g.ended = this.ended;
+        return g;
+    }
+    
+    public getAllValidMoves(): { big: number; row: number; col: number }[] {
+        const moves = [];
+    
+        for (const big of this.getValidBigBoards()) {
+            const big_board = this.board[big];
+            if (!big_board) {
+                return [];
+            }
+
+            for (let r = 0; r < 3; r++) {
+                const small_row = big_board[r];
+                if (!small_row) {
+                    return [];
+                }
+
+                for (let c = 0; c < 3; c++) {
+                    if (small_row[c] === 0) {
+                        moves.push({ big, row: r, col: c });
+                    }
+                }
+            }
+        }
+    
+        return moves;
+    }    
 }

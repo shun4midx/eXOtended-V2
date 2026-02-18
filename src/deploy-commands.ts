@@ -34,24 +34,28 @@ const commands = [
     new SlashCommandBuilder()
         .setName('export_game')
         .setDescription('Export the latest current eXOtended game in this channel')
-        .toJSON()    
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('play_vs_computer')
+        .setDescription('Create a game where you play vs the computer')
+        .toJSON()
 ];
 
 const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN!);
 
 async function deploy() {
-  try {
-    console.log('Registering global slash commands...');
+    try {
+        console.log('Registering global slash commands...');
 
-    await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID!), // global, not per‑guild
-      { body: commands },
-    );
+        await rest.put(
+        Routes.applicationCommands(process.env.CLIENT_ID!), // global, not per‑guild
+            { body: commands },
+        );
 
-    console.log('Global slash commands registered successfully.');
-  } catch (error) {
-    console.error(error);
-  }
+        console.log('Global slash commands registered successfully.');
+    } catch (error) {
+        console.error(error);
+    }
 }
 
 deploy();
